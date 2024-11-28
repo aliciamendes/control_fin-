@@ -58,6 +58,14 @@ public class CustomerDAO {
     }
   }
 
+  public CustomerModel findByAccountNumber(Long accountNumber) {
+    return entityManager.createQuery(
+        "SELECT c FROM customer c WHERE c.accountNumber = :accountNumber",
+        CustomerModel.class)
+        .setParameter("accountNumber", accountNumber)
+        .getSingleResult();
+  }
+
   public void create(CustomerModel customer) {
     try {
       String sql = "INSERT INTO customer (username, individual_registration, account_number, fullname, password, age, balance, created_at) "
@@ -78,7 +86,6 @@ public class CustomerDAO {
       query.executeUpdate();
 
     } catch (Exception e) {
-      e.printStackTrace();
       throw new RuntimeException("Failed to create customer", e);
     }
   }
@@ -147,5 +154,4 @@ public class CustomerDAO {
     query.setParameter("id", customer.getId());
     query.executeUpdate();
   }
-
 }

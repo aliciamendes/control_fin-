@@ -12,7 +12,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
@@ -54,13 +53,5 @@ public class CustomerModel {
   private BigDecimal balance = BigDecimal.ZERO;
 
   @CreationTimestamp
-  private LocalDateTime createdAt;
-
-  @PrePersist
-  public void generateAccountNumber() {
-    if (this.accountNumber == null) {
-      this.accountNumber = 100_000 + (long) (Math.random() * 900_000);
-    }
-  }
-
+  private LocalDateTime createdAt = LocalDateTime.now();
 }

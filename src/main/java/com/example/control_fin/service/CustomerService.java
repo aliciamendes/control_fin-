@@ -34,6 +34,9 @@ public class CustomerService {
 
   @SuppressWarnings("rawtypes")
   public ResponseEntity createCustomer(CustomerModel customer) {
+    if (customer.getAccountNumber() == null) {
+      customer.setAccountNumber(100_000 + (long) (Math.random() * 900_000));
+    }
 
     if (customer.getAge() < MINIMUM_AGE) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Under 18s cannot create an account");
