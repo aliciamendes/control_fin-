@@ -1,7 +1,7 @@
-# ControlFin-
+<h1 align="center">ControlFin-</h1>
 
-<p align="center">
-ControlFin+ é um aplicativo desenvolvido como parte de um teste técnico para uma posição de Java Jr. O objetivo é gerenciar efetivamente usuários e transações financeiras.
+<p align="justify">
+ControlFin- é um aplicativo de gerenciamento financeiro, desenvolvido como parte de um teste técnico para a posição de Java Jr. Ele oferece funcionalidades como criação de usuários, gerenciamento de transações financeiras (depósitos, saques, transferências) e rastreabilidade conforme padrões regulatórios.
 </p>
 
 <p align="center">
@@ -14,11 +14,11 @@ ControlFin+ é um aplicativo desenvolvido como parte de um teste técnico para u
 
 ### Ferramentas
 
-- [x] **Java SDK** - Recomendado: JDKs v23
-- [x] **Spring Boot** - Recomendado: v3.4
-- [x] **H2 Database Project** (em memória)
-- [x] **VSCode** (opcional)
-- [x] **Postman** (opcional)
+- [x] **Java SDK** _- Recomendado: JDK 17 ou superior_
+- [x] **Spring Boot** _- Recomendado: 3.4.0_
+- [x] **H2 Database Project** _- Banco de dados em memória_
+- [x] **VSCode** _(opcional)_
+- [x] **Postman** _(opcional)_
 
 ###
 
@@ -26,22 +26,18 @@ ControlFin+ é um aplicativo desenvolvido como parte de um teste técnico para u
 
 ###
 
-<style>
-  .tech-logo {
-    margin: 0 10px;
-  }
-</style>
-
 <div align="center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" height="40" alt="Java logo" class="tech-logo" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/spring/spring-original.svg" height="40" alt="Spring logo" class="tech-logo" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vscode/vscode-original.svg" height="40" alt="VSCode logo" class="tech-logo" />
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postman/postman-original.svg" height="40" alt="Postman logo" class="tech-logo" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg" height="40" alt="Java logo" style="margin: 0 10px;" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/spring/spring-original.svg" height="40" alt="Spring logo"style="margin: 0 10px;" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vscode/vscode-original.svg" height="40" alt="VSCode logo"style="margin: 0 10px;" />
+  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postman/postman-original.svg" height="40" alt="Postman logo"style="margin: 0 10px;" />
 </div>
 
 ###
 
 ### Manual do usuário da API
+
+A API permite gerenciar **usuários** e **transações financeiras** com endpoints para operações básicas. Os dados são armazenados em um banco H2 em memória, e as transações seguem padrões contábeis e legais de imutabilidade.
 
 ###
 
@@ -52,22 +48,34 @@ ControlFin+ é um aplicativo desenvolvido como parte de um teste técnico para u
 ##### Para utilizar o Java no VSCode, é necessário instalar as extensões abaixo
 
 - **vscjava.vscode-java-pack**
-  - vscjava.vscode-java-debug
-  - vscjava.vscode-java-test
-  - vscjava.vscode-java-dependency
-  - vscjava.vscode-maven
-  - redhat.java
+  - Debug, testes e dependências para projetos Java
 - **vscjava.vscode-spring-initializr**
 - **vmware.vscode-spring-boot**
 - **vscjava.vscode-spring-boot-dashboard**
 
 ###
 
-#### Para começar, faça o clone do repositório
+#### Como rodar o projeto
 
-```bash
-git clone https://github.com/aliciamendes/control_fin-.git
-```
+1. Clone do projeto
+
+   ```bash
+   git clone https://github.com/aliciamendes/control_fin-.git
+   ```
+
+2. Abra o projeto no VSCode (ou por linha de comando)
+
+   ```bash
+    cd control_fin
+
+   ```
+
+3. Inicie a aplicação
+
+   ```bash
+    ./mvnw spring-boot:run
+
+   ```
 
 ### Endpoints
 
@@ -161,21 +169,22 @@ git clone https://github.com/aliciamendes/control_fin-.git
 }
 ```
 
-> [!TIP] > [!TIP]
-> Transações no Projeto:
+### Sobre Transações no Projeto
+
+> [!TIP] Transações no Projeto:
 >
 > O módulo Transactions possui apenas duas rotas principais porque segue princípios contábeis e legislações rigorosas sobre a imutabilidade de registros financeiros:
 >
-> > Princípio contábil: Não é permitido apagar ou alterar transações financeiras registradas. Caso ocorra um erro ou necessidade de reversão, é preciso criar novas transações que justifiquem e ajustem a operação anterior.
+> > Princípio contábil: Não é permitido apagar ou alterar transações financeiras registradas. Caso ocorra um erro ou necessidade de reversão, é necessário criar novas transações que ajustem ou justifiquem a operação anterior.
 >
-> > Lei Sarbanes-Oxley (SOX): Essa lei norte-americana exige que todas as transações financeiras sejam rastreáveis, garantindo a transparência e a conformidade em auditorias financeiras.
+> > Lei Sarbanes-Oxley (SOX): Essa legislação norte-americana exige que todas as transações financeiras sejam rastreáveis, garantindo a transparência e a conformidade durante auditorias financeiras.
 >
-> > Banco Central do Brasil: Similarmente, no Brasil, as regulamentações determinam que todas as operações financeiras sejam registradas de forma permanente, sem possibilidade de edição direta, para assegurar a integridade dos dados.
+> > Banco Central do Brasil: Regulamentações brasileiras determinam que todas as operações financeiras sejam registradas de forma permanente, sem possibilidade de edição direta, assegurando a integridade dos dados.
 >
-> No projeto, essas regras são aplicadas para:
+> No projeto, essas regras foram aplicadas para:
 >
-> > Manter um registro histórico confiável de todas as operações financeiras realizadas.
+> > Manter um histórico confiável: Garantindo que todas as operações sejam registradas de forma permanente.
 >
-> > Garantir que cada transação seja imutável, protegendo os dados contra manipulações indevidas.
+> > Proteger os dados contra manipulação: Garantindo que cada transação seja imutável.
 >
-> > Implementar métodos para corrigir ou reverter operações de forma rastreável e transparente, sem comprometer a conformidade legal.
+> > Facilitar auditorias financeiras: Implementando métodos para corrigir ou reverter operações de forma rastreável e transparente, sem comprometer a conformidade legal.

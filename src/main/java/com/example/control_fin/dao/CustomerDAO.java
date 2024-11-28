@@ -58,7 +58,7 @@ public class CustomerDAO {
     }
   }
 
-  public CustomerModel findByAccountNumber(Long accountNumber) {
+  public CustomerModel findByAccountNumber(String accountNumber) {
     return entityManager.createQuery(
         "SELECT c FROM customer c WHERE c.accountNumber = :accountNumber",
         CustomerModel.class)

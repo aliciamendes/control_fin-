@@ -17,23 +17,17 @@ import jakarta.transaction.Transactional;
 @Repository
 public class TransactionDAO {
 
-  // Princípio contábil: Não se pode apagar ou alterar transações financeiras
-  // registradas, mas sim criar novas transações para corrigir erros ou reverter
-  // operações.
-  // A Lei Sarbanes-Oxley (SOX) nos EUA exige que todas as transações financeiras
-  // sejam rastreáveis.
-  // Banco Central também demanda que operações financeiras sejam registradas de
-  // forma imutável.
-
   @PersistenceContext
   private EntityManager entityManager;
 
-  public List<TransactionModel> findByAccount(CustomerModel accountNumber) {
+  public List<TransactionModel> findByAccount(CustomerModel customer) {
     try {
       return entityManager
-          .createQuery("SELECT t FROM transaction t WHERE t.customerAccount = :accountNumber", TransactionModel.class)
-          .setParameter("accountNumber", accountNumber)
+          .createQuery("SELECT t FROM transaction t WHERE t.customerAccount.accountNumber = :accountNumber",
+              TransactionModel.class)
+          .setParameter("accountNumber", customer.getAccountNumber())
           .getResultList();
+
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -70,46 +64,36 @@ public class TransactionDAO {
   }
 
   @Transactional
-  public String saveTransfer(CustomerModel customerAccount, BigDecimal amount, CustomerModel customerAccountDest) {
-    try {
-      String withdrawSql = "UPDATE customer SET balance = balance - :amount WHERE account_number = :accountNumber";
-      Query withdrawQuery = entityManager.createNativeQuery(withdrawSql);
-      withdrawQuery.setParameter("amount", amount);
-      withdrawQuery.setParameter("accountNumber", customerAccount.getAccountNumber());
-      int withdrawRowsAffected = withdrawQuery.executeUpdate();
+  public String saveTransfer(TransactionModel transaction) {
 
-      String depositSql = "UPDATE customer SET balance = balance + :amount WHERE account_number = :accountNumber";
-      Query depositQuery = entityManager.createNativeQuery(depositSql);
-      depositQuery.setParameter("amount", amount);
-      depositQuery.setParameter("accountNumber", customerAccountDest.getAccountNumber());
-      int depositRowsAffected = depositQuery.executeUpdate();
+    String updateSourceQuery = "UPDATE customer c SET c.balance = c.balance - :amount WHERE c.accountNumber = :accountNumber";
+    Query sourceQuery = entityManager.createQuery(updateSourceQuery);
+    sourceQuery.setParameter("amount", transaction.getAmount());
+    sourceQuery.setParameter("accountNumber", transaction.getCustomerAccount().getAccountNumber());
+    int updatedSource = sourceQuery.executeUpdate();
 
-      if (withdrawRowsAffected > 0 && depositRowsAffected > 0) {
-        String senderTransactionSql = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number) "
-            + "VALUES ('WITHDRAWAL', :amount, :transactionDate, :accountNumber)";
-        Query senderTransactionQuery = entityManager.createNativeQuery(senderTransactionSql);
-        senderTransactionQuery.setParameter("amount", amount);
-        senderTransactionQuery.setParameter("transactionDate", LocalDateTime.now());
-        senderTransactionQuery.setParameter("accountNumber", customerAccount.getAccountNumber());
-        senderTransactionQuery.executeUpdate();
+    String updateDestQuery = "UPDATE customer c SET c.balance = c.balance + :amount WHERE c.accountNumber = :accountNumber";
+    Query destQuery = entityManager.createQuery(updateDestQuery);
+    destQuery.setParameter("amount", transaction.getAmount());
+    destQuery.setParameter("accountNumber", transaction.getDestinationCustomer().getAccountNumber());
+    int updatedDest = destQuery.executeUpdate();
 
-        String receiverTransactionSql = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number) "
-            + "VALUES ('DEPOSIT', :amount, :transactionDate, :accountNumber)";
-        Query receiverTransactionQuery = entityManager.createNativeQuery(receiverTransactionSql);
-        receiverTransactionQuery.setParameter("amount", amount);
-        receiverTransactionQuery.setParameter("transactionDate", LocalDateTime.now());
-        receiverTransactionQuery.setParameter("accountNumber", customerAccountDest.getAccountNumber());
-        receiverTransactionQuery.executeUpdate();
-
-        return "Transfer made successfully!";
-      } else {
-        return "Failure when making the transfer";
-      }
-
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException("Error when processing the transfer", e);
+    if (updatedSource == 0 || updatedDest == 0) {
+      return "Transfer failed.";
     }
+
+    String insertTransactionQuery = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number, destination_account_number) "
+        +
+        "VALUES (:transactionType, :amount, :transactionDate, :accountNumber, :destinationAccountNumber)";
+    Query insertQuery = entityManager.createNativeQuery(insertTransactionQuery);
+    insertQuery.setParameter("transactionType", transaction.getTransactionType().toString());
+    insertQuery.setParameter("amount", transaction.getAmount());
+    insertQuery.setParameter("transactionDate", transaction.getTransactionDate());
+    insertQuery.setParameter("accountNumber", transaction.getCustomerAccount().getAccountNumber());
+    insertQuery.setParameter("destinationAccountNumber", transaction.getDestinationCustomer().getAccountNumber());
+    insertQuery.executeUpdate();
+
+    return "Transfer successful";
   }
 
   @Transactional
@@ -122,14 +106,13 @@ public class TransactionDAO {
       int rowsAffected = query.executeUpdate();
 
       if (rowsAffected > 0) {
-        String transactionSql = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number) "
-            +
-            "VALUES ('DEPOSIT', :amount, :transactionDate, :accountNumber)";
-        Query transactionQuery = entityManager.createNativeQuery(transactionSql);
-        transactionQuery.setParameter("amount", amount);
-        transactionQuery.setParameter("transactionDate", LocalDateTime.now());
-        transactionQuery.setParameter("accountNumber", customerAccount.getAccountNumber());
-        transactionQuery.executeUpdate();
+        String withdrawalTransactionSql = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number) "
+            + "VALUES ('WITHDRAWAL', :amount, :transactionDate, :accountNumber)";
+        Query withdrawalTransactionQuery = entityManager.createNativeQuery(withdrawalTransactionSql);
+        withdrawalTransactionQuery.setParameter("amount", amount);
+        withdrawalTransactionQuery.setParameter("transactionDate", LocalDateTime.now());
+        withdrawalTransactionQuery.setParameter("accountNumber", customerAccount.getAccountNumber());
+        withdrawalTransactionQuery.executeUpdate();
 
         return 1;
       } else {

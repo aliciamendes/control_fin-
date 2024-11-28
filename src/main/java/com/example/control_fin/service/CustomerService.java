@@ -32,6 +32,10 @@ public class CustomerService {
     return customerDAO.findById(userId);
   }
 
+  public CustomerModel findByAccountNumber(String accountNumber) {
+    return customerDAO.findByAccountNumber(accountNumber);
+  }
+
   @SuppressWarnings("rawtypes")
   public ResponseEntity createCustomer(CustomerModel customer) {
     if (customer.getAccountNumber() == null) {

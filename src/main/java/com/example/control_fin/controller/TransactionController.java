@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.control_fin.model.CustomerModel;
 import com.example.control_fin.model.TransactionModel;
+import com.example.control_fin.service.CustomerService;
 import com.example.control_fin.service.TransactionService;
 
 @RestController
@@ -21,35 +22,27 @@ public class TransactionController {
   @Autowired
   private TransactionService transactionService;
 
-  @GetMapping("/{account}")
-  @SuppressWarnings("rawtypes")
-  public ResponseEntity<ResponseEntity> getTransactionByAccount(@PathVariable CustomerModel account) {
-    try {
-      ResponseEntity transactions = transactionService.findTransactionByAccount(account);
+  @Autowired
+  private CustomerService customerService;
 
-      if (transactions == null) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-      }
-      return ResponseEntity.ok(transactions);
+  @GetMapping("/{accountNumber}")
+  public ResponseEntity<?> getTransactionByAccount(@PathVariable String accountNumber) {
+    CustomerModel account = customerService.findByAccountNumber(accountNumber);
 
-    } catch (Exception e) {
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+    if (account == null) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
     }
+
+    ResponseEntity transactions = transactionService.findTransactionByAccount(account);
+
+    return ResponseEntity.ok(transactions);
+
   }
 
   @PostMapping()
-  public ResponseEntity<String> createTransaction(@RequestBody TransactionModel transaction) {
-    // try {
-    String result = transactionService.saveTransaction(transaction);
-    return ResponseEntity.status(HttpStatus.CREATED).body(result);
+  public String createTransaction(@RequestBody TransactionModel transaction) {
+    return transactionService.saveTransaction(transaction);
 
-    // } catch (IllegalArgumentException e) {
-    // return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-
-    // } catch (Exception e) {
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("An unexpected error occurred while creating the transaction");
-    // }
   }
 
 }
