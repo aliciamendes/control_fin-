@@ -2,6 +2,7 @@ package com.example.control_fin.dao;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Repository;
 
@@ -27,12 +28,12 @@ public class TransactionDAO {
   @PersistenceContext
   private EntityManager entityManager;
 
-  public TransactionModel findByAccount(CustomerModel accountNumber) {
+  public List<TransactionModel> findByAccount(CustomerModel accountNumber) {
     try {
       return entityManager
           .createQuery("SELECT t FROM transaction t WHERE t.customerAccount = :accountNumber", TransactionModel.class)
           .setParameter("accountNumber", accountNumber)
-          .getSingleResult();
+          .getResultList();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
