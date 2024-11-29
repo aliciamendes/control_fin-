@@ -2,8 +2,11 @@ package com.example.control_fin.service.validation;
 
 import org.springframework.stereotype.Service;
 
+// service for customer validation (CPF)
 @Service
 public class CustomerValidationService {
+
+  // valida seta no formato certo
   public boolean isValidCPF(String cpf) {
     if (cpf == null || cpf.isEmpty()) {
       return false;
@@ -22,6 +25,7 @@ public class CustomerValidationService {
     }
   }
 
+  // valida o COF
   public boolean isValidIndividualRegistration(String registration) {
     if (registration == null || registration.isEmpty()) {
       return false;
@@ -40,6 +44,7 @@ public class CustomerValidationService {
     return isValidCPF(registration);
   }
 
+  // calcula e verifica os dgitos verificadores
   private boolean validateCPFChecksum(String cpf) {
     int sum = 0;
     for (int i = 0; i < 9; i++) {

@@ -14,6 +14,8 @@ import com.example.control_fin.model.CustomerModel;
 import com.example.control_fin.model.TransactionModel;
 import com.example.control_fin.service.validation.CustomerValidationService;
 
+import at.favre.lib.crypto.bcrypt.BCrypt;
+
 @Service
 @Transactional
 public class CustomerService {
@@ -90,6 +92,9 @@ public class CustomerService {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User already exists");
     }
 
+    var passwordEncrypted = BCrypt.withDefaults().hashToString(12, customer.getPassword().toCharArray());
+    customer.setPassword(passwordEncrypted);
+
     customerDAO.create(customer);
 
     return ResponseEntity
@@ -121,7 +126,8 @@ public class CustomerService {
       existingCustomer.setUsername(customer.getUsername());
     }
     if (customer.getPassword() != null) {
-      existingCustomer.setPassword(customer.getPassword());
+      var passwordEncrypted = BCrypt.withDefaults().hashToString(12, customer.getPassword().toCharArray());
+      existingCustomer.setPassword(passwordEncrypted);
     }
     if (customer.getAge() != null) {
       existingCustomer.setAge(customer.getAge());
