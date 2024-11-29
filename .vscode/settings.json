@@ -1,5 +1,11 @@
 {
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.compile.nullAnalysis.mode": "automatic",
-  "cSpell.words": ["rawtypes"]
+  "cSpell.words": [
+    "favre",
+    "projectlombok",
+    "rawtypes",
+    "springfox",
+    "springframework"
+  ]
 }

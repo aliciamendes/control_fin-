@@ -2,6 +2,7 @@ package com.example.control_fin.service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,119 +30,128 @@ public class CustomerService {
   private CustomerValidationService customerValidationService;
 
   private static final int MINIMUM_AGE = 18;
+  private static final long ACCOUNT_NUMBER_MIN = 100_000;
+  private static final long ACCOUNT_NUMBER_MAX = 999_999;
 
+  @SuppressWarnings("unchecked")
   public ResponseEntity<List<CustomerDTO>> getAllCustomers() {
     List<CustomerModel> customers = customerDAO.findAll();
-
     if (customers.isEmpty()) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+      return createResponse(Collections.emptyList(), HttpStatus.NOT_FOUND);
     }
 
     List<CustomerDTO> customerDTO = customers.stream()
-        .map(customer -> new CustomerDTO(customer))
+        .map(CustomerDTO::new)
         .collect(Collectors.toList());
 
-    return ResponseEntity.status(HttpStatus.OK).body(customerDTO);
+    return createResponse(customerDTO, HttpStatus.OK);
   }
 
+  @SuppressWarnings("unchecked")
   public ResponseEntity<CustomerDTO> getCustomerById(Long userId) {
-    CustomerModel customer = customerDAO.findById(userId);
-    if (customer == null) {
-      return null;
-    }
-
+    CustomerModel customer = findCustomerById(userId);
     CustomerDTO customerDTO = new CustomerDTO(customer);
-
-    return ResponseEntity
-        .status(HttpStatus.OK)
-        .body(customerDTO);
+    return createResponse(customerDTO, HttpStatus.OK);
   }
 
-  @SuppressWarnings("rawtypes")
-  public ResponseEntity getTransactionCustomerById(Long userId) {
-    List<TransactionModel> transaction = customerDAO.findTransactionById(userId);
-
-    if (transaction != null) {
-      return ResponseEntity.status(HttpStatus.OK).body(transaction);
-    } else {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+  @SuppressWarnings("unchecked")
+  public ResponseEntity<List<TransactionModel>> getTransactionCustomerById(Long userId) {
+    List<TransactionModel> transactions = customerDAO.findTransactionById(userId);
+    if (transactions.isEmpty()) {
+      return createResponse("Transactions not found for this customer", HttpStatus.NOT_FOUND);
     }
+    return createResponse(transactions, HttpStatus.OK);
   }
 
-  @SuppressWarnings("rawtypes")
-  public ResponseEntity createCustomer(CustomerModel customer) {
-    if (customer.getAccountNumber() == null) {
-      customer.setAccountNumber(100_000 + (long) (Math.random() * 900_000));
-    }
+  @SuppressWarnings("unchecked")
+  public ResponseEntity<CustomerDTO> createCustomer(CustomerModel customer) {
+    validateCustomerForCreation(customer);
 
-    if (customer.getAge() < MINIMUM_AGE) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Under 18s cannot create an account");
-    }
-
-    var isUserIR = customerDAO.findByIR(customer.getIndividualRegistration());
-
-    if (isUserIR != null) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Individual Registration already exists");
-    }
-
-    if (!customerValidationService.isValidIndividualRegistration(customer.getIndividualRegistration())) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid Individual Registration");
-    }
-
-    var isUser = customerDAO.findByUsername(customer.getUsername());
-
-    if (isUser != null) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User already exists");
-    }
-
-    var passwordEncrypted = BCrypt.withDefaults().hashToString(12, customer.getPassword().toCharArray());
-    customer.setPassword(passwordEncrypted);
-
+    encryptPassword(customer);
     customerDAO.create(customer);
 
-    CustomerDTO customerDTO = new CustomerDTO(customer);
-
-    return ResponseEntity
-        .status(HttpStatus.CREATED)
-        .body(customerDTO);
-
+    return createResponse(new CustomerDTO(customer), HttpStatus.CREATED);
   }
 
-  @SuppressWarnings("rawtypes")
-  public ResponseEntity deleteCustomer(Long id) {
-    var deleted = customerDAO.deleteById(id);
-    if (deleted == 0) {
-      return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+  @SuppressWarnings("unchecked")
+  public ResponseEntity<String> deleteCustomer(Long id) {
+    if (customerDAO.deleteById(id) < 1) {
+      return createResponse("User not found", HttpStatus.NOT_FOUND);
     }
-    return ResponseEntity.status(HttpStatus.OK).body("User deleted successfully");
+    return createResponse("User deleted successfully", HttpStatus.OK);
   }
 
-  @SuppressWarnings("rawtypes")
-  public ResponseEntity updateCustomer(Long id, CustomerModel customer) {
-    CustomerModel existingCustomer = customerDAO.findById(id);
-    if (existingCustomer == null) {
-      throw new RuntimeException("Customer not found");
-    }
-
-    if (customer.getFullname() != null) {
-      existingCustomer.setFullname(customer.getFullname());
-    }
-    if (customer.getUsername() != null) {
-      existingCustomer.setUsername(customer.getUsername());
-    }
-    if (customer.getPassword() != null) {
-      var passwordEncrypted = BCrypt.withDefaults().hashToString(12, customer.getPassword().toCharArray());
-      existingCustomer.setPassword(passwordEncrypted);
-    }
-    if (customer.getAge() != null) {
-      existingCustomer.setAge(customer.getAge());
-    }
-    if (customer.getIndividualRegistration() != null) {
-      existingCustomer.setIndividualRegistration(customer.getIndividualRegistration());
-    }
+  @SuppressWarnings("unchecked")
+  public ResponseEntity<String> updateCustomer(Long id, CustomerModel customer) {
+    CustomerModel existingCustomer = findCustomerById(id);
+    updateCustomerData(existingCustomer, customer);
 
     customerDAO.update(existingCustomer);
-    return ResponseEntity.status(HttpStatus.OK).body("User updated successfully");
+
+    return createResponse("User updated successfully", HttpStatus.OK);
   }
 
+  private void validateCustomerForCreation(CustomerModel customer) {
+    generateAccountNumberIfNeeded(customer);
+
+    if (customer.getAge() < MINIMUM_AGE) {
+      throw new IllegalArgumentException("Under 18s cannot create an account");
+    }
+    if (isIndividualRegistrationExists(customer)) {
+      throw new IllegalArgumentException("Individual Registration already exists");
+    }
+    if (!customerValidationService.isValidIndividualRegistration(customer.getIndividualRegistration())) {
+      throw new IllegalArgumentException("Invalid Individual Registration");
+    }
+    if (isUsernameTaken(customer)) {
+      throw new IllegalArgumentException("User already exists");
+    }
+  }
+
+  private CustomerModel findCustomerById(Long id) {
+    return Optional.ofNullable(customerDAO.findById(id))
+        .orElseThrow(() -> new RuntimeException("Customer not found"));
+  }
+
+  private void updateCustomerData(CustomerModel existingCustomer, CustomerModel customer) {
+    if (customer.getFullname() != null)
+      existingCustomer.setFullname(customer.getFullname());
+    if (customer.getUsername() != null)
+      existingCustomer.setUsername(customer.getUsername());
+    if (customer.getPassword() != null)
+      updateCustomerPassword(existingCustomer, customer.getPassword());
+    if (customer.getAge() != null)
+      existingCustomer.setAge(customer.getAge());
+    if (customer.getIndividualRegistration() != null)
+      existingCustomer.setIndividualRegistration(customer.getIndividualRegistration());
+  }
+
+  private void updateCustomerPassword(CustomerModel existingCustomer, String password) {
+    String encryptedPassword = BCrypt.withDefaults().hashToString(12, password.toCharArray());
+    existingCustomer.setPassword(encryptedPassword);
+  }
+
+  private void encryptPassword(CustomerModel customer) {
+    String encryptedPassword = BCrypt.withDefaults().hashToString(12, customer.getPassword().toCharArray());
+    customer.setPassword(encryptedPassword);
+  }
+
+  private void generateAccountNumberIfNeeded(CustomerModel customer) {
+    if (customer.getAccountNumber() == null) {
+      customer.setAccountNumber(ACCOUNT_NUMBER_MIN + (long) (Math.random() * ACCOUNT_NUMBER_MAX));
+    }
+  }
+
+  private boolean isIndividualRegistrationExists(CustomerModel customer) {
+    return customerDAO.findByIR(customer.getIndividualRegistration()) != null;
+  }
+
+  private boolean isUsernameTaken(CustomerModel customer) {
+    return customerDAO.findByUsername(customer.getUsername()) != null;
+  }
+
+  @SuppressWarnings("rawtypes")
+  private ResponseEntity createResponse(Object body, HttpStatus status) {
+    return ResponseEntity.status(status).body(body);
+  }
 }

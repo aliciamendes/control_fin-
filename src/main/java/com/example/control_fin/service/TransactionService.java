@@ -20,61 +20,76 @@ public class TransactionService {
   @Autowired
   private CustomerDAO customerDAO;
 
+  private CustomerModel verifyCustomerAccount(TransactionModel transaction) {
+    CustomerModel customer = customerDAO
+        .findByAccountNumber(transaction.getCustomerAccount().getAccountNumber().toString());
+
+    if (customer == null) {
+      throw new AccountNotFoundException("Account not found");
+    }
+
+    if (customer.getBalance().compareTo(transaction.getAmount()) < 0) {
+      throw new InsufficientBalanceException("Insufficient balance for transaction");
+    }
+
+    return customer;
+  }
+
   @SuppressWarnings("rawtypes")
   public ResponseEntity findTransactionById(Long transactionId) {
-    var isTransaction = transactionDAO.findById(transactionId);
+    var transaction = transactionDAO.findById(transactionId);
 
-    if (isTransaction.size() > 0) {
-      return ResponseEntity.status(HttpStatus.ACCEPTED).body(isTransaction);
+    if (!transaction.isEmpty()) {
+      return ResponseEntity.status(HttpStatus.OK).body(transaction);
     }
 
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Transaction not found");
   }
 
-  public String createTransactionTransfer(TransactionModel transaction) {
-
-    CustomerModel customer = customerDAO
-        .findByAccountNumber(transaction.getCustomerAccount().getAccountNumber().toString());
-    if (customer == null) {
-      throw new RuntimeException("Account not found");
-    }
+  public ResponseEntity<String> createTransactionTransfer(TransactionModel transaction) {
 
     if (transaction.getCustomerAccount().getAccountNumber()
         .equals(transaction.getDestinationCustomer().getAccountNumber())) {
-      return "Cannot transfer to the same account.";
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Cannot transfer to the same account.");
     }
-    if (customer.getBalance().compareTo(transaction.getAmount()) < 0) {
-      throw new RuntimeException("Insufficient balance for transfer");
-    }
-    return transactionDAO.saveTransfer(transaction);
+
+    transactionDAO.saveTransfer(transaction);
+    return ResponseEntity.status(HttpStatus.CREATED).body("Transfer successful");
   }
 
-  public String createTransactionWithdraw(TransactionModel transaction) {
+  public ResponseEntity<String> createTransactionWithdraw(TransactionModel transaction) {
+    verifyCustomerAccount(transaction);
 
-    CustomerModel customer = customerDAO
-        .findByAccountNumber(transaction.getCustomerAccount().getAccountNumber().toString());
-    if (customer == null) {
-      throw new RuntimeException("Account not found");
-    }
-
-    if (customer.getBalance().compareTo(transaction.getAmount()) < 0) {
-      throw new RuntimeException("Insufficient balance for withdrawal");
-    }
     var rowsAffected_Withdrawal = transactionDAO.saveWithdrawal(
         transaction.getCustomerAccount(),
         transaction.getAmount());
+
     if (rowsAffected_Withdrawal == 0) {
-      throw new RuntimeException("Failed to withdrawal");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to withdraw");
     }
-    return "Withdrawal successful";
+
+    return ResponseEntity.status(HttpStatus.OK).body("Withdrawal successful");
   }
 
-  public String createTransactionDeposit(TransactionModel transaction) {
+  public ResponseEntity<String> createTransactionDeposit(TransactionModel transaction) {
     var rowsAffected = transactionDAO.saveDeposit(transaction.getCustomerAccount(), transaction.getAmount());
+
     if (rowsAffected == 0) {
-      throw new RuntimeException("Failed to deposit");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to deposit");
     }
-    return "Deposit successful";
+
+    return ResponseEntity.status(HttpStatus.OK).body("Deposit successful");
   }
 
+  public static class AccountNotFoundException extends RuntimeException {
+    public AccountNotFoundException(String message) {
+      super(message);
+    }
+  }
+
+  public static class InsufficientBalanceException extends RuntimeException {
+    public InsufficientBalanceException(String message) {
+      super(message);
+    }
+  }
 }

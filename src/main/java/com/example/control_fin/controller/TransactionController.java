@@ -26,10 +26,11 @@ public class TransactionController {
     return transactionService.findTransactionById(accountNumber);
   }
 
+  @SuppressWarnings("rawtypes")
   @PostMapping("/deposit")
-  public ResponseEntity<?> deposit(@RequestBody TransactionModel transaction) {
+  public ResponseEntity deposit(@RequestBody TransactionModel transaction) {
     try {
-      String result = transactionService.createTransactionDeposit(transaction);
+      ResponseEntity<String> result = transactionService.createTransactionDeposit(transaction);
       return ResponseEntity.ok(result);
     } catch (RuntimeException e) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -39,7 +40,7 @@ public class TransactionController {
   @PostMapping("/withdraw")
   public ResponseEntity<?> withdraw(@RequestBody TransactionModel transaction) {
     try {
-      String result = transactionService.createTransactionWithdraw(transaction);
+      ResponseEntity<String> result = transactionService.createTransactionWithdraw(transaction);
       return ResponseEntity.ok(result);
     } catch (RuntimeException e) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -49,7 +50,7 @@ public class TransactionController {
   @PostMapping("/transfer")
   public ResponseEntity<?> transfer(@RequestBody TransactionModel transaction) {
     try {
-      String result = transactionService.createTransactionTransfer(transaction);
+      ResponseEntity<String> result = transactionService.createTransactionTransfer(transaction);
       return ResponseEntity.ok(result);
     } catch (RuntimeException e) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

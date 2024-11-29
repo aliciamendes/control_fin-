@@ -7,20 +7,23 @@
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.4.0</version>
 		<relativePath/>
-		<!-- lookup parent from repository -->
 	</parent>
+
 	<groupId>com.example</groupId>
 	<artifactId>control_fin</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>control_fin</name>
 	<description>an application developed as part of a technical test for a position in Java. Its aim is to manage users and financial transactions efficiently</description>
 	<url/>
+
 	<licenses>
 		<license/>
 	</licenses>
+
 	<developers>
 		<developer/>
 	</developers>
+
 	<scm>
 		<connection/>
 		<developerConnection/>
@@ -83,8 +86,6 @@
 			<artifactId>springfox-swagger2</artifactId>
 			<version>2.9.2</version>
 		</dependency>
-
-
 	</dependencies>
 
 	<build>
@@ -95,5 +96,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>
