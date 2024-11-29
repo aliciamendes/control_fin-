@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.control_fin.dao.CustomerDAO;
 import com.example.control_fin.model.CustomerModel;
 import com.example.control_fin.model.TransactionModel;
+import com.example.control_fin.service.validation.CustomerValidationService;
 
 @Service
 @Transactional
@@ -19,6 +20,10 @@ public class CustomerService {
 
   @Autowired
   private CustomerDAO customerDAO;
+
+  @Autowired
+  private CustomerValidationService customerValidationService;
+
   private static final int MINIMUM_AGE = 18;
 
   public ResponseEntity<List<CustomerModel>> getAllCustomers() {
@@ -75,7 +80,7 @@ public class CustomerService {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Individual Registration already exists");
     }
 
-    if (!isValidIndividualRegistration(customer.getIndividualRegistration())) {
+    if (!customerValidationService.isValidIndividualRegistration(customer.getIndividualRegistration())) {
       return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid Individual Registration");
     }
 
@@ -127,56 +132,6 @@ public class CustomerService {
 
     customerDAO.update(existingCustomer);
     return ResponseEntity.status(HttpStatus.OK).body("User updated successfully");
-  }
-
-  private boolean isValidIndividualRegistration(String IR) {
-    if (IR == null || IR.isEmpty()) {
-      return false;
-    }
-
-    if (!IR.matches("[0-9\\.\\-]+")) {
-      return false;
-    }
-
-    IR = IR.replaceAll("\\D", "");
-
-    if (!IR.matches("\\d{11}")) {
-      return false;
-    }
-
-    return isValidCPF(IR);
-  }
-
-  private boolean isValidCPF(String IR) {
-    IR = IR.replaceAll("\\D", "");
-
-    if (!IR.matches("\\d{11}") || IR.matches("(\\d)\\1{10}")) {
-      return false;
-    }
-
-    try {
-      int sum = 0;
-      for (int i = 0; i < 9; i++) {
-        sum += Character.getNumericValue(IR.charAt(i)) * (10 - i);
-      }
-      int firstVerifier = 11 - (sum % 11);
-      if (firstVerifier >= 10)
-        firstVerifier = 0;
-
-      sum = 0;
-      for (int i = 0; i < 10; i++) {
-        sum += Character.getNumericValue(IR.charAt(i)) * (11 - i);
-      }
-      int secondVerifier = 11 - (sum % 11);
-      if (secondVerifier >= 10)
-        secondVerifier = 0;
-
-      return IR.charAt(9) == Character.forDigit(firstVerifier, 10) &&
-          IR.charAt(10) == Character.forDigit(secondVerifier, 10);
-    } catch (Exception e) {
-      return false;
-    }
-
   }
 
 }

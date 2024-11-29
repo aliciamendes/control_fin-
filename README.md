@@ -174,7 +174,8 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 
 ### Sobre Transações no Projeto
 
-> [!TIP] Transações no Projeto:
+> [!TIP]
+> Transações no Projeto:
 >
 > O módulo Transactions possui apenas duas rotas principais porque segue princípios contábeis e legislações rigorosas sobre a imutabilidade de registros financeiros:
 >
