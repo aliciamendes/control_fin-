@@ -2,6 +2,7 @@ package com.example.control_fin.service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.control_fin.dao.CustomerDAO;
+import com.example.control_fin.dto.CustomerDTO;
 import com.example.control_fin.model.CustomerModel;
 import com.example.control_fin.model.TransactionModel;
 import com.example.control_fin.service.validation.CustomerValidationService;
@@ -28,21 +30,31 @@ public class CustomerService {
 
   private static final int MINIMUM_AGE = 18;
 
-  public ResponseEntity<List<CustomerModel>> getAllCustomers() {
+  public ResponseEntity<List<CustomerDTO>> getAllCustomers() {
     List<CustomerModel> customers = customerDAO.findAll();
+
     if (customers.isEmpty()) {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
     }
-    return ResponseEntity.status(HttpStatus.OK).body(customers);
+
+    List<CustomerDTO> customerDTO = customers.stream()
+        .map(customer -> new CustomerDTO(customer))
+        .collect(Collectors.toList());
+
+    return ResponseEntity.status(HttpStatus.OK).body(customerDTO);
   }
 
-  public ResponseEntity<CustomerModel> getCustomerById(Long userId) {
+  public ResponseEntity<CustomerDTO> getCustomerById(Long userId) {
     CustomerModel customer = customerDAO.findById(userId);
     if (customer == null) {
       return null;
     }
-    customerDAO.findById(userId);
-    return ResponseEntity.status(HttpStatus.OK).body(customer);
+
+    CustomerDTO customerDTO = new CustomerDTO(customer);
+
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .body(customerDTO);
   }
 
   @SuppressWarnings("rawtypes")
@@ -54,16 +66,6 @@ public class CustomerService {
     } else {
       return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
     }
-  }
-
-  @SuppressWarnings("rawtypes")
-  public ResponseEntity findByAccountNumber(String accountNumber) {
-    CustomerModel customer = customerDAO.findByAccountNumber(accountNumber);
-
-    if (customer != null) {
-      return ResponseEntity.status(HttpStatus.OK).body(customer);
-    }
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
   }
 
   @SuppressWarnings("rawtypes")
@@ -97,9 +99,11 @@ public class CustomerService {
 
     customerDAO.create(customer);
 
+    CustomerDTO customerDTO = new CustomerDTO(customer);
+
     return ResponseEntity
         .status(HttpStatus.CREATED)
-        .body("User created successfully");
+        .body(customerDTO);
 
   }
 

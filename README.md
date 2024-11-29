@@ -37,7 +37,7 @@ ControlFin- é um aplicativo de gerenciamento financeiro, desenvolvido como part
 
 ### Manual do usuário da API
 
-A API permite gerenciar **usuários** e **transações financeiras** com endpoints para operações básicas. Os dados são armazenados em um banco H2 em memória, e as transações seguem padrões contábeis e legais de imutabilidade.
+A API permite gerenciar usuários e transações financeiras com endpoints para operações básicas. Os dados são armazenados em um banco H2 em memória, o que significa que os dados serão apagados sempre que a aplicação for reiniciada. As transações seguem padrões contábeis e legais de imutabilidade.
 
 ###
 
@@ -81,15 +81,31 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 
 ### Endpoints do usuário
 
-#### Buscar usuário pelo id
+#### Buscar usuário pelo ID
+
+Retorna as informações de um usuário específico pelo seu identificador único.
 
 > GET: /customer/{id}
 
-#### Buscar todos os usuário
+**Exemplo de resposta**
+
+```json
+{
+  "id": 1,
+  "username": "user_example",
+  "fullname": "Exemplo Nome",
+  "age": 30,
+  "individualRegistration": "12345678901"
+}
+```
+
+#### Buscar todos os usuários
+
+Retorna uma lista com as informações de todos os usuário.
 
 > GET: /customer
 
-#### Buscar todos as trnsações do usuário pelo id
+#### Buscar todos as transações do usuário pelo id
 
 > GET: /customer/{id}/transactions
 
@@ -99,8 +115,8 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 
 ```json
 {
-  "username": "aliciamesmo",
-  "fullname": "Alícia Mendes",
+  "username": "user_example",
+  "fullname": "Exemplo Nome",
   "password": "my_p4ssw0rd",
   "age": 25,
   "individualRegistration": "27084849076" // Gerado no 4Devs
@@ -174,7 +190,6 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 
 ### Sobre Transações no Projeto
 
-> [!TIP]
 > Transações no Projeto:
 >
 > O módulo Transactions possui apenas duas rotas principais porque segue princípios contábeis e legislações rigorosas sobre a imutabilidade de registros financeiros:
@@ -192,3 +207,5 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 > > Proteger os dados contra manipulação: Garantindo que cada transação seja imutável.
 >
 > > Facilitar auditorias financeiras: Implementando métodos para corrigir ou reverter operações de forma rastreável e transparente, sem comprometer a conformidade legal.
+
+> PS: Na minha máquina roda 😂
