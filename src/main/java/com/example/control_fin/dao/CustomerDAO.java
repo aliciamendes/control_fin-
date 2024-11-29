@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Repository;
 
 import com.example.control_fin.model.CustomerModel;
+import com.example.control_fin.model.TransactionModel;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -36,33 +37,46 @@ public class CustomerDAO {
     }
   }
 
-  public CustomerModel findByIR(String userIR) {
+  public CustomerModel findByIR(String customerIR) {
     try {
       return entityManager
-          .createQuery("SELECT c FROM customer c WHERE c.individualRegistration = :userIR", CustomerModel.class)
-          .setParameter("userIR", userIR)
+          .createQuery("SELECT c FROM customer c WHERE c.individualRegistration = :customerIR", CustomerModel.class)
+          .setParameter("customerIR", customerIR)
           .getSingleResult();
     } catch (NoResultException e) {
       return null;
     }
   }
 
-  public CustomerModel findById(Long userId) {
+  public CustomerModel findById(Long customerId) {
     try {
       return entityManager
-          .createQuery("SELECT c FROM customer c WHERE c.id = :userId", CustomerModel.class)
-          .setParameter("userId", userId)
+          .createQuery("SELECT c FROM customer c WHERE c.id = :customerId", CustomerModel.class)
+          .setParameter("customerId", customerId)
           .getSingleResult();
     } catch (NoResultException e) {
       return null;
     }
   }
 
-  public CustomerModel findByAccountNumber(String accountNumber) {
+  public List<TransactionModel> findTransactionById(Long customerId) {
+    try {
+      return entityManager
+          .createQuery(
+              "SELECT t FROM transaction t JOIN t.customerAccount c WHERE c.id = :customerId",
+              TransactionModel.class)
+          .setParameter("customerId", customerId)
+          .getResultList();
+    } catch (NoResultException e) {
+      return null;
+    }
+  }
+
+  public CustomerModel findByAccountNumber(String customerAccountNumber) {
     return entityManager.createQuery(
-        "SELECT c FROM customer c WHERE c.accountNumber = :accountNumber",
+        "SELECT c FROM customer c WHERE c.accountNumber = :customerAccountNumber",
         CustomerModel.class)
-        .setParameter("accountNumber", accountNumber)
+        .setParameter("customerAccountNumber", customerAccountNumber)
         .getSingleResult();
   }
 
@@ -90,10 +104,10 @@ public class CustomerDAO {
     }
   }
 
-  public int deleteById(Long userId) {
+  public int deleteById(Long customerId) {
     int rowsDeleted = entityManager
-        .createQuery("DELETE FROM customer c WHERE c.id = :userId")
-        .setParameter("userId", userId)
+        .createQuery("DELETE FROM customer c WHERE c.id = :customerId")
+        .setParameter("customerId", customerId)
         .executeUpdate();
 
     return rowsDeleted;

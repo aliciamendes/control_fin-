@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.control_fin.dao.CustomerDAO;
 import com.example.control_fin.model.CustomerModel;
+import com.example.control_fin.model.TransactionModel;
 
 @Service
 @Transactional
@@ -28,12 +29,34 @@ public class CustomerService {
     return ResponseEntity.status(HttpStatus.OK).body(customers);
   }
 
-  public CustomerModel getCustomerById(Long userId) {
-    return customerDAO.findById(userId);
+  public ResponseEntity<CustomerModel> getCustomerById(Long userId) {
+    CustomerModel customer = customerDAO.findById(userId);
+    if (customer == null) {
+      return null;
+    }
+    customerDAO.findById(userId);
+    return ResponseEntity.status(HttpStatus.OK).body(customer);
   }
 
-  public CustomerModel findByAccountNumber(String accountNumber) {
-    return customerDAO.findByAccountNumber(accountNumber);
+  @SuppressWarnings("rawtypes")
+  public ResponseEntity getTransactionCustomerById(Long userId) {
+    List<TransactionModel> transaction = customerDAO.findTransactionById(userId);
+
+    if (transaction != null) {
+      return ResponseEntity.status(HttpStatus.OK).body(transaction);
+    } else {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+    }
+  }
+
+  @SuppressWarnings("rawtypes")
+  public ResponseEntity findByAccountNumber(String accountNumber) {
+    CustomerModel customer = customerDAO.findByAccountNumber(accountNumber);
+
+    if (customer != null) {
+      return ResponseEntity.status(HttpStatus.OK).body(customer);
+    }
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
   }
 
   @SuppressWarnings("rawtypes")

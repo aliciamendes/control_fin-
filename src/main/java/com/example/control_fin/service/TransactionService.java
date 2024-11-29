@@ -21,10 +21,8 @@ public class TransactionService {
   private CustomerDAO customerDAO;
 
   @SuppressWarnings("rawtypes")
-  public ResponseEntity findTransactionByAccount(CustomerModel account) {
-    var isTransaction = transactionDAO.findByAccount(account);
-
-    System.out.println("\n\n\n\n" + isTransaction + "\n\n\n\n");
+  public ResponseEntity findTransactionById(Long transactionId) {
+    var isTransaction = transactionDAO.findById(transactionId);
 
     if (isTransaction.size() > 0) {
       return ResponseEntity.status(HttpStatus.ACCEPTED).body(isTransaction);
@@ -33,7 +31,7 @@ public class TransactionService {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Transaction not found");
   }
 
-  public String saveTransaction(TransactionModel transaction) {
+  public String createTransactionTransfer(TransactionModel transaction) {
 
     CustomerModel customer = customerDAO
         .findByAccountNumber(transaction.getCustomerAccount().getAccountNumber().toString());
@@ -41,39 +39,42 @@ public class TransactionService {
       throw new RuntimeException("Account not found");
     }
 
-    switch (transaction.getTransactionType()) {
-      case DEPOSIT:
-        var rowsAffected = transactionDAO.saveDeposit(transaction.getCustomerAccount(), transaction.getAmount());
-        if (rowsAffected == 0) {
-          throw new RuntimeException("Failed to deposit");
-        }
-        return "Deposit successful";
-
-      case TRANSFER:
-        if (transaction.getCustomerAccount().getAccountNumber()
-            .equals(transaction.getDestinationCustomer().getAccountNumber())) {
-          return "Cannot transfer to the same account.";
-        }
-        if (customer.getBalance().compareTo(transaction.getAmount()) < 0) {
-          throw new RuntimeException("Insufficient balance for transfer");
-        }
-        return transactionDAO.saveTransfer(transaction);
-
-      case WITHDRAWAL:
-        if (customer.getBalance().compareTo(transaction.getAmount()) < 0) {
-          throw new RuntimeException("Insufficient balance for withdrawal");
-        }
-        var rowsAffected_Withdrawal = transactionDAO.saveWithdrawal(
-            transaction.getCustomerAccount(),
-            transaction.getAmount());
-        if (rowsAffected_Withdrawal == 0) {
-          throw new RuntimeException("Failed to withdrawal");
-        }
-        return "Withdrawal successful";
-
-      default:
-        return "Invalid transaction type";
+    if (transaction.getCustomerAccount().getAccountNumber()
+        .equals(transaction.getDestinationCustomer().getAccountNumber())) {
+      return "Cannot transfer to the same account.";
     }
+    if (customer.getBalance().compareTo(transaction.getAmount()) < 0) {
+      throw new RuntimeException("Insufficient balance for transfer");
+    }
+    return transactionDAO.saveTransfer(transaction);
+  }
+
+  public String createTransactionWithdraw(TransactionModel transaction) {
+
+    CustomerModel customer = customerDAO
+        .findByAccountNumber(transaction.getCustomerAccount().getAccountNumber().toString());
+    if (customer == null) {
+      throw new RuntimeException("Account not found");
+    }
+
+    if (customer.getBalance().compareTo(transaction.getAmount()) < 0) {
+      throw new RuntimeException("Insufficient balance for withdrawal");
+    }
+    var rowsAffected_Withdrawal = transactionDAO.saveWithdrawal(
+        transaction.getCustomerAccount(),
+        transaction.getAmount());
+    if (rowsAffected_Withdrawal == 0) {
+      throw new RuntimeException("Failed to withdrawal");
+    }
+    return "Withdrawal successful";
+  }
+
+  public String createTransactionDeposit(TransactionModel transaction) {
+    var rowsAffected = transactionDAO.saveDeposit(transaction.getCustomerAccount(), transaction.getAmount());
+    if (rowsAffected == 0) {
+      throw new RuntimeException("Failed to deposit");
+    }
+    return "Deposit successful";
   }
 
 }

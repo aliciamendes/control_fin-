@@ -66,7 +66,7 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 2. Abra o projeto no VSCode (ou por linha de comando)
 
    ```bash
-    cd control_fin
+    cd control_fin-
 
    ```
 
@@ -89,6 +89,10 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 
 > GET: /customer
 
+#### Buscar todos as trnsações do usuário pelo id
+
+> GET: /customer/{id}/transactions
+
 #### Criar usuário
 
 > POST: /customer
@@ -109,7 +113,7 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 
 ```json
 {
-  "password": "new_my_p4ssw0rd"
+  "password": "my_n3w_pa5sw0rd"
 }
 ```
 
@@ -119,13 +123,13 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 
 ### Endpoints da Transação
 
-#### Buscar os todas as transações do usuário pelo número da conta
+#### Buscar os todas as transações do usuário pelo id do usuário
 
-> GET: /transaction/{accountNumber}
+> GET: /transaction/{id}
 
-#### Criar transação (depósito)
+#### Criar transação de depósito
 
-> POST: /transaction
+> POST: /transaction/deposit
 
 ```json
 {
@@ -133,14 +137,13 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
   "amount": 100.5,
   "customerAccount": {
     "accountNumber": 549131
-  },
-  "destinationCustomer": null
+  }
 }
 ```
 
-#### Criar transação (saque)
+#### Criar transação de saque
 
-> POST: /transaction
+> POST: /transaction/withdraw
 
 ```json
 {
@@ -152,9 +155,9 @@ A API permite gerenciar **usuários** e **transações financeiras** com endpoin
 }
 ```
 
-#### Criar transação (transferência)
+#### Criar transação de transferência
 
-> POST: /transaction
+> POST: /transaction/transfer
 
 ```json
 {

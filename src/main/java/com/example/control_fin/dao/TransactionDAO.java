@@ -20,12 +20,12 @@ public class TransactionDAO {
   @PersistenceContext
   private EntityManager entityManager;
 
-  public List<TransactionModel> findByAccount(CustomerModel customer) {
+  public List<TransactionModel> findById(Long transactionId) {
     try {
       return entityManager
-          .createQuery("SELECT t FROM transaction t WHERE t.customerAccount.accountNumber = :accountNumber",
+          .createQuery("SELECT t FROM transaction t WHERE t.id = :transactionId",
               TransactionModel.class)
-          .setParameter("accountNumber", customer.getAccountNumber())
+          .setParameter("transactionId", transactionId)
           .getResultList();
 
     } catch (Exception e) {

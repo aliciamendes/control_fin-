@@ -1,7 +1,5 @@
 package com.example.control_fin.controller;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -24,13 +22,21 @@ public class CustomerController {
   private CustomerService customerService;
 
   @GetMapping()
-  public ResponseEntity<List<CustomerModel>> getCustomers() {
+  @SuppressWarnings("rawtypes")
+  public ResponseEntity getCustomers() {
     return customerService.getAllCustomers();
   }
 
   @GetMapping("/{id}")
-  public CustomerModel getCustomerById(@PathVariable Long id) {
+  @SuppressWarnings("rawtypes")
+  public ResponseEntity getCustomerById(@PathVariable Long id) {
     return customerService.getCustomerById(id);
+  }
+
+  @GetMapping("/{id}/transactions")
+  @SuppressWarnings("rawtypes")
+  public ResponseEntity getTransactions(@PathVariable Long id) {
+    return customerService.getTransactionCustomerById(id);
   }
 
   @PostMapping()
