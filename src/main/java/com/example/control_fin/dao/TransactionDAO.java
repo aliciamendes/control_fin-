@@ -20,109 +20,93 @@ public class TransactionDAO {
   @PersistenceContext
   private EntityManager entityManager;
 
+  private static final String TRANSACTION_INSERT = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number, destination_account_number) "
+      +
+      "VALUES (:transactionType, :amount, :transactionDate, :accountNumber, :destinationAccountNumber)";
+
+  private static final String UPDATE_BALANCE = "UPDATE customer SET balance = balance + :amount WHERE account_number = :accountNumber";
+
   public List<TransactionModel> findById(Long transactionId) {
     try {
-      return entityManager
-          .createQuery("SELECT t FROM transaction t WHERE t.id = :transactionId",
-              TransactionModel.class)
+      return entityManager.createQuery(
+          "SELECT t FROM TransactionModel t WHERE t.id = :transactionId",
+          TransactionModel.class)
           .setParameter("transactionId", transactionId)
           .getResultList();
-
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Error retrieving transaction by ID: " + transactionId, e);
     }
   }
 
   @Transactional
-  public Integer saveDeposit(CustomerModel customerAccount, BigDecimal amount) {
+  public int saveDeposit(CustomerModel customerAccount, BigDecimal amount) {
     try {
-      String sql = "UPDATE customer SET balance = balance + :amount WHERE account_number = :accountNumber";
-      Query query = entityManager.createNativeQuery(sql);
-      query.setParameter("amount", amount);
-      query.setParameter("accountNumber", customerAccount.getAccountNumber());
-      int rowsAffected = query.executeUpdate();
-
-      if (rowsAffected > 0) {
-        String transactionSql = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number) "
-            +
-            "VALUES ('DEPOSIT', :amount, :transactionDate, :accountNumber)";
-        Query transactionQuery = entityManager.createNativeQuery(transactionSql);
-        transactionQuery.setParameter("amount", amount);
-        transactionQuery.setParameter("transactionDate", LocalDateTime.now());
-        transactionQuery.setParameter("accountNumber", customerAccount.getAccountNumber());
-        transactionQuery.executeUpdate();
-
-        return 1;
-      } else {
-        throw new RuntimeException("Account not found or balance update failed.");
+      int rowsUpdated = updateCustomerBalance(customerAccount.getAccountNumber(), amount);
+      if (rowsUpdated > 0) {
+        saveTransaction("DEPOSIT", amount, customerAccount.getAccountNumber(), null);
+        return rowsUpdated;
       }
+      throw new RuntimeException("Failed to update balance for deposit.");
     } catch (Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException("Unexpected error occurred while processing the deposit", e);
+      throw new RuntimeException("Error processing deposit for account: " + customerAccount.getAccountNumber(), e);
     }
-
   }
 
   @Transactional
   public String saveTransfer(TransactionModel transaction) {
+    try {
+      int rowsSource = updateCustomerBalance(
+          transaction.getCustomerAccount().getAccountNumber(),
+          transaction.getAmount().negate());
+      int rowsDest = updateCustomerBalance(
+          transaction.getDestinationCustomer().getAccountNumber(),
+          transaction.getAmount());
 
-    String updateSourceQuery = "UPDATE customer c SET c.balance = c.balance - :amount WHERE c.accountNumber = :accountNumber";
-    Query sourceQuery = entityManager.createQuery(updateSourceQuery);
-    sourceQuery.setParameter("amount", transaction.getAmount());
-    sourceQuery.setParameter("accountNumber", transaction.getCustomerAccount().getAccountNumber());
-    int updatedSource = sourceQuery.executeUpdate();
-
-    String updateDestQuery = "UPDATE customer c SET c.balance = c.balance + :amount WHERE c.accountNumber = :accountNumber";
-    Query destQuery = entityManager.createQuery(updateDestQuery);
-    destQuery.setParameter("amount", transaction.getAmount());
-    destQuery.setParameter("accountNumber", transaction.getDestinationCustomer().getAccountNumber());
-    int updatedDest = destQuery.executeUpdate();
-
-    if (updatedSource == 0 || updatedDest == 0) {
-      return "Transfer failed.";
+      if (rowsSource > 0 && rowsDest > 0) {
+        saveTransaction(
+            "TRANSFER",
+            transaction.getAmount(),
+            transaction.getCustomerAccount().getAccountNumber(),
+            transaction.getDestinationCustomer().getAccountNumber());
+        return "Transfer successful.";
+      }
+      throw new RuntimeException("Failed to complete the transfer.");
+    } catch (Exception e) {
+      throw new RuntimeException("Error processing transfer from account: " +
+          transaction.getCustomerAccount().getAccountNumber(), e);
     }
-
-    String insertTransactionQuery = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number, destination_account_number) "
-        +
-        "VALUES (:transactionType, :amount, :transactionDate, :accountNumber, :destinationAccountNumber)";
-    Query insertQuery = entityManager.createNativeQuery(insertTransactionQuery);
-    insertQuery.setParameter("transactionType", transaction.getTransactionType().toString());
-    insertQuery.setParameter("amount", transaction.getAmount());
-    insertQuery.setParameter("transactionDate", transaction.getTransactionDate());
-    insertQuery.setParameter("accountNumber", transaction.getCustomerAccount().getAccountNumber());
-    insertQuery.setParameter("destinationAccountNumber", transaction.getDestinationCustomer().getAccountNumber());
-    insertQuery.executeUpdate();
-
-    return "Transfer successful";
   }
 
   @Transactional
   public int saveWithdrawal(CustomerModel customerAccount, BigDecimal amount) {
     try {
-      String sql = "UPDATE customer SET balance = balance - :amount WHERE account_number = :accountNumber";
-      Query query = entityManager.createNativeQuery(sql);
-      query.setParameter("amount", amount);
-      query.setParameter("accountNumber", customerAccount.getAccountNumber());
-      int rowsAffected = query.executeUpdate();
-
-      if (rowsAffected > 0) {
-        String withdrawalTransactionSql = "INSERT INTO transaction (transaction_type, amount, transaction_date, account_number) "
-            + "VALUES ('WITHDRAWAL', :amount, :transactionDate, :accountNumber)";
-        Query withdrawalTransactionQuery = entityManager.createNativeQuery(withdrawalTransactionSql);
-        withdrawalTransactionQuery.setParameter("amount", amount);
-        withdrawalTransactionQuery.setParameter("transactionDate", LocalDateTime.now());
-        withdrawalTransactionQuery.setParameter("accountNumber", customerAccount.getAccountNumber());
-        withdrawalTransactionQuery.executeUpdate();
-
-        return 1;
-      } else {
-        return 0;
+      int rowsUpdated = updateCustomerBalance(
+          customerAccount.getAccountNumber(),
+          amount.negate());
+      if (rowsUpdated > 0) {
+        saveTransaction("WITHDRAWAL", amount, customerAccount.getAccountNumber(), null);
+        return rowsUpdated;
       }
-
+      throw new RuntimeException("Failed to update balance for withdrawal.");
     } catch (Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException("Error when processing the withdrawal", e);
+      throw new RuntimeException("Error processing withdrawal for account: " + customerAccount.getAccountNumber(), e);
     }
   }
 
+  private int updateCustomerBalance(Long accountNumber, BigDecimal amount) {
+    Query query = entityManager.createNativeQuery(UPDATE_BALANCE);
+    query.setParameter("amount", amount);
+    query.setParameter("accountNumber", accountNumber);
+    return query.executeUpdate();
+  }
+
+  private void saveTransaction(String type, BigDecimal amount, Long accountNumber, Long destinationAccountNumber) {
+    Query query = entityManager.createNativeQuery(TRANSACTION_INSERT);
+    query.setParameter("transactionType", type);
+    query.setParameter("amount", amount);
+    query.setParameter("transactionDate", LocalDateTime.now());
+    query.setParameter("accountNumber", accountNumber);
+    query.setParameter("destinationAccountNumber", destinationAccountNumber);
+    query.executeUpdate();
+  }
 }

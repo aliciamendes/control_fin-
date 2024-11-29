@@ -54,7 +54,7 @@ public class TransactionService {
     }
 
     transactionDAO.saveTransfer(transaction);
-    return ResponseEntity.status(HttpStatus.CREATED).body("Transfer successful");
+    return ResponseEntity.status(HttpStatus.OK).body("Transfer successful");
   }
 
   public ResponseEntity<String> createTransactionWithdraw(TransactionModel transaction) {
